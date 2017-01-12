@@ -23,7 +23,7 @@ import PerfectHTTPServer
 
 // An example request handler.
 // This 'handler' function can be referenced directly in the configuration below.
-func handler(data: [String:Any]) throws -> RequestHandler {
+func helloHandler(data: [String:Any]) throws -> RequestHandler {
 	return {
 		request, response in
 		// Respond with a simple message.
@@ -34,12 +34,26 @@ func handler(data: [String:Any]) throws -> RequestHandler {
 	}
 }
 
+// Google Cloud health check endpoint.
+func healthHandler(data: [String:Any]) throws -> RequestHandler {
+	return {
+		// This handler is called periodically by Google Cloud to ensure the service is up.
+		request, response in
+		// Respond with 200 OK
+		response.status = .ok
+		// Ensure that response.completed() is called when your processing is done.
+		response.completed()
+	}
+}
+
+// This is the required listen port for App Engine.
 let port1 = 8080
 
 let confData = [
 	"servers": [
 		// Configuration data for one server which:
-		//	* Serves the hello world message at <host>:<port>/
+		//	* Serves the hello world message at <host>:<port>/hello
+		//	* Responds to Google Cloud health checks.
 		//	* Serves static files out of the "./webroot"
 		//		directory (which must be located in the current working directory).
 		//	* Performs content compression on outgoing data when appropriate.
@@ -47,7 +61,8 @@ let confData = [
 			"name":"localhost",
 			"port":port1,
 			"routes":[
-				["method":"get", "uri":"/", "handler":handler],
+				["method":"get", "uri":"/hello", "handler":helloHandler],
+				["method":"get", "uri":"/_ah/health", "handler":healthHandler],
 				["method":"get", "uri":"/**", "handler":PerfectHTTPServer.HTTPHandler.staticFiles,
 				 "documentRoot":"./webroot",
 				 "allowResponseFilters":true]
